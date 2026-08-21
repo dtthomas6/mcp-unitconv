@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -26,7 +27,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
-server.setRequestHandler(CallToolRequestSchema, async (req) => {
+export async function handleCallTool(
+  req: { params: { name: string; arguments?: unknown } },
+): Promise<{ content: [{ type: 'text'; text: string }]; isError?: boolean }> {
   if (req.params.name !== 'convert') throw new Error(`Unknown tool: ${req.params.name}`);
   const { value, from, to } = req.params.arguments as { value: number; from: string; to: string };
   try {
@@ -35,6 +38,15 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
   } catch (e) {
     return { content: [{ type: 'text', text: `Error: ${(e as Error).message}` }], isError: true };
   }
-});
+}
 
-await server.connect(new StdioServerTransport());
+server.setRequestHandler(CallToolRequestSchema, handleCallTool);
+
+async function main() {
+  await server.connect(new StdioServerTransport());
+}
+
+// Only connect to stdio when run as the entry script, not when imported (e.g. by tests).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
