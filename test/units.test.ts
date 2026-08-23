@@ -54,6 +54,24 @@ test('same unit is a no-op for non-temperature dimensions', () => {
   assert.equal(convert(42, 'kg', 'kg').value, 42);
 });
 
+test('volume: m3 to l', () => {
+  assert.equal(convert(1, 'm3', 'l').value, 1000);
+});
+
+test('volume: gal to l', () => {
+  const r = convert(1, 'gal', 'l');
+  assert.ok(Math.abs(r.value - 3.785411784) < 1e-9);
+});
+
+test('area: km2 to m2', () => {
+  assert.equal(convert(1, 'km2', 'm2').value, 1e6);
+});
+
+test('area: acre to m2', () => {
+  const r = convert(1, 'acre', 'm2');
+  assert.ok(Math.abs(r.value - 4046.8564224) < 1e-6);
+});
+
 test('rejects mismatched dimensions', () => {
   assert.throws(() => convert(1, 'km', 'kg'), /量纲不匹配/);
 });
@@ -84,7 +102,7 @@ test('dimensionOf returns null for unknown units and bare temperature symbols', 
 
 test('supportedUnits covers every dimension plus temperature', () => {
   const units = supportedUnits();
-  for (const u of ['m', 'km', 'g', 'kg', 's', 'h', 'C', 'F', 'K']) {
+  for (const u of ['m', 'km', 'g', 'kg', 's', 'h', 'C', 'F', 'K', 'l', 'm3', 'm2', 'acre']) {
     assert.ok(units.includes(u), `expected ${u} in supportedUnits()`);
   }
 });
