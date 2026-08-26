@@ -25,6 +25,24 @@ test('convert tool reports a non-finite value as a tool error', async () => {
   assert.equal(res.isError, true);
 });
 
+test('convert tool reports missing arguments as a tool error, not a throw', async () => {
+  const res = await handleCallTool({ params: { name: 'convert', arguments: undefined } });
+  assert.equal(res.isError, true);
+  assert.match(res.content[0].text, /arguments must be an object/);
+});
+
+test('convert tool reports a non-numeric value as a tool error', async () => {
+  const res = await handleCallTool({ params: { name: 'convert', arguments: { value: '1', from: 'm', to: 'km' } } });
+  assert.equal(res.isError, true);
+  assert.match(res.content[0].text, /value must be a number/);
+});
+
+test('convert tool reports a non-string unit as a tool error', async () => {
+  const res = await handleCallTool({ params: { name: 'convert', arguments: { value: 1, from: 5, to: 'km' } } });
+  assert.equal(res.isError, true);
+  assert.match(res.content[0].text, /from must be a string/);
+});
+
 test('requesting an unknown tool name throws rather than returning a result', async () => {
   await assert.rejects(
     () => handleCallTool({ params: { name: 'nope', arguments: {} } }),

@@ -27,12 +27,32 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
+interface ConvertArgs {
+  value: number;
+  from: string;
+  to: string;
+}
+
+// Tool input arrives as unknown JSON from the client; a raw cast would let a
+// malformed request (missing fields, wrong types) throw past the try/catch
+// below instead of coming back as a normal tool error.
+function parseConvertArgs(args: unknown): ConvertArgs {
+  if (typeof args !== 'object' || args === null) {
+    throw new Error('arguments must be an object with value, from and to');
+  }
+  const { value, from, to } = args as Record<string, unknown>;
+  if (typeof value !== 'number') throw new Error(`value must be a number, got ${typeof value}`);
+  if (typeof from !== 'string') throw new Error(`from must be a string, got ${typeof from}`);
+  if (typeof to !== 'string') throw new Error(`to must be a string, got ${typeof to}`);
+  return { value, from, to };
+}
+
 export async function handleCallTool(
   req: { params: { name: string; arguments?: unknown } },
 ): Promise<{ content: [{ type: 'text'; text: string }]; isError?: boolean }> {
   if (req.params.name !== 'convert') throw new Error(`Unknown tool: ${req.params.name}`);
-  const { value, from, to } = req.params.arguments as { value: number; from: string; to: string };
   try {
+    const { value, from, to } = parseConvertArgs(req.params.arguments);
     const r = convert(value, from, to);
     return { content: [{ type: 'text', text: `${value} ${from} = ${r.value} ${to}` }] };
   } catch (e) {
